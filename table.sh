@@ -99,6 +99,7 @@ create_table() {
   done
 
   echo "Table '$tname' created successfully!"
+    echo "*********************************************************"
 }
 
 
@@ -121,6 +122,7 @@ drop_table() {
 
   rm "$tname.data" "$tname.meta"
   echo "Table '$tname' deleted successfully!"
+    echo "*********************************************************"
 }
 
 
@@ -133,7 +135,10 @@ insert_row() {
   while IFS=: read cname dtype pk
   do
     while true; do
-      read -p "Enter $cname ($dtype): " val
+
+    read -p "Enter $cname ($dtype): " val < /dev/tty
+#      read -p "Enter $cname ($dtype): " val
+
       val="${val// /}"  # remove spaces around input
 
       # Check empty input
@@ -141,27 +146,31 @@ insert_row() {
 
       # Datatype validation
       case "${dtype^}" in
-        int)
-          [[ ! "$val" =~ ^[0-9]+$ ]] && echo "Error: Must be an integer." && continue
+        Int)
+          [[ ! "$val" =~ ^[0-9]+$ ]] && echo "Error: Must be a positive integer." && continue
           ;;
-        float)
+        Float)
           [[ ! "$val" =~ ^[0-9]+([.][0-9]+)?$ ]] && echo "Error: Must be a float." && continue
           ;;
-        date)
+        Date)
           [[ ! "$val" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]] && echo "Error: Must be YYYY-MM-DD." && continue
           if ! date -d "$val" >/dev/null 2>&1; then
     echo "Error: Invalid date."
     continue
   fi
   ;;
-       string)
+       String)
     max_length=30
     if [ ${#val} -gt $max_length ]; then
         echo "Error: String too long. Maximum $max_length characters allowed."
         continue
     fi
+  
+if [[ "$val" == *:* ]]; then
+        echo "Error: String cannot contain ':' character."
+        continue
+    fi
     ;;
-
         *)
           echo "Error: Unknown datatype '$dtype'." && return
           ;;
@@ -183,22 +192,20 @@ insert_row() {
 
   echo "${row::-1}" >> "$tname.data"
   echo "Row inserted successfully!"
+    echo "*********************************************************"
 }
 
-
 list_tables() {
-  shopt -s nullglob
-  local files=( *.data )
-
-  if [ ${#files[@]} -eq 0 ]; then
-    echo "No tables found."
-    return
-  fi
-
-  for f in "${files[@]}"; do
+  for f in *.data; do
+    if [[ $f == "*.data" ]]; then
+      echo "No tables found."
+      return
+    fi
     echo "${f%.data}"
   done
 }
+
+
 
 select_data() {
   read -p "Enter table name: " tname
@@ -209,12 +216,11 @@ select_data() {
     return
   fi
 
-  # Print column headers
-  headers=$(awk -F: '{print $1}' "$tname.meta" | paste -sd "\t" -)
-  echo -e "$headers"
-
-  # Print all rows with tabs instead of colons for readability
-  awk -F: '{print $0}' "$tname.data" | column -t -s ":"
+{
+  awk -F: '{print $1}' "$tname.meta" | paste -sd ":" -
+  cat "$tname.data"
+} | column -t -s ":"
+  echo "*********************************************************"
 }
 
 delete_row() {
@@ -235,9 +241,10 @@ delete_row() {
   fi
 
   # Delete the row safely
-  sed -i.bak "/^$id:/d" "$tname.data"
+  sed -i "/^$id:/d" "$tname.data"
 
   echo "Row with PK '$id' deleted successfully."
+    echo "*********************************************************"
 }
 
 update_cell() {
@@ -250,21 +257,45 @@ update_cell() {
   fi
 
   read -p "Enter PK value: " id
+  id="${id// /}"  # remove spaces
 
   # Check if PK exists
+  if [ -z "$id" ]; then
+    echo "Error: PK cannot be empty."
+    return
+  fi
+
   if ! grep -q "^$id:" "$tname.data"; then
     echo "Error: PK value '$id' not found."
     return
   fi
 
+  # Number of columns in the table
+  total_cols=$(wc -l < "$tname.meta")
+
   read -p "Enter Column number: " col
+  col="${col// /}"  # remove spaces
+
+  # Validate column number
+  if ! [[ "$col" =~ ^[0-9]+$ ]] || (( col < 1 || col > total_cols )); then
+    echo "Error: Invalid column number. Must be between 1 and $total_cols."
+    return
+  fi
+
   read -p "Enter New value: " val
+  val="${val// /}"  # remove spaces
+
+  # Check empty value
+  if [ -z "$val" ]; then
+    echo "Error: Value cannot be empty or spaces only."
+    return
+  fi
 
   # Get datatype from meta
   dtype=$(sed -n "${col}p" "$tname.meta" | cut -d: -f2)
 
   # Validate based on datatype
-  case "$dtype" in
+  case "${dtype^}" in
     Int)
       if ! [[ $val =~ ^[0-9]+$ ]]; then
         echo "Error: Value must be an integer."
@@ -278,22 +309,25 @@ update_cell() {
       fi
       ;;
     String)
-
-      if [[ $val =~ [0-9] ]] || [[ $val =~ [^a-zA-Z\ ] ]]; then
-        echo "Error: String cannot contain numbers or special characters."
+    max_length=30
+    if [ ${#val} -gt $max_length ]; then
+        echo "Error: String too long. Maximum $max_length characters allowed." 
+        continue
+    fi
+    if [[ "$val" == *:* ]]; then
+        echo "Error: String cannot contain ':' character."
         return
-      fi
+    fi
       ;;
     Date)
-
-      if ! [[ $val =~ ^[0-9]{2}-[0-9]{2}-[0-9]{4}$ ]]; then
+      if ! [[ $val =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]]; then
         echo "Error: Date must be in DD-MM-YYYY format."
         return
       fi
       if ! date -d "$val" >/dev/null 2>&1; then
-    echo "Error: Invalid date."
-
-  fi
+        echo "Error: Invalid date."
+        return
+      fi
       ;;
     *)
       echo "Warning: Unknown datatype '$dtype'. No validation applied."
@@ -301,9 +335,10 @@ update_cell() {
   esac
 
   # Update the value in data file
-  awk -F: -v id="$id" -v col="$col" -v val="$val" 'BEGIN{OFS=":"} $1==id {$col=val}1' "$tname.data" > tmpfile && mv tmpfile "$tname.data"
+  awk -F: -v id="$id" -v col="$col" -v val="$val" 'BEGIN{OFS=":"} $1==id {$col=val} { print }' "$tname.data" > tmpfile && mv tmpfile "$tname.data"
   echo "Value updated successfully."
- }
+}
+
 
   read -p "Choose option: " choice
 
@@ -316,6 +351,9 @@ update_cell() {
     6) delete_row ;;
     7) update_cell ;;
     8) exit ;;
-    *) echo "Invalid choice" ;;
+    *) echo "Invalid choice" 
+    echo "****************************"
+    ;;
   esac
 done
+
