@@ -73,26 +73,30 @@ while true; do
                 ;;
 
             "Connect to Database")
-                # echo -e "\n${BLUE}--- Connect to Database ---${NC}"
-                # read -p "Enter Database Name: " enteredname
-                # if [ -d "$DIR/$enteredname" ]; then
-                #     echo -e "${GREEN}Connecting to '$enteredname'...${NC}" 
-                #     cd "$DIR/$enteredname"
-                    
-                #     # TRANSFER CONTROL TO TABLE SCRIPT 
-                #     if [ -f "../../table.sh" ]; then
-                #         bash "../../table.sh"
-                #     else
-                #         echo -e "${RED}Error: table.sh not found!${NC}" 
-                #     fi
-                    
-                #     # Return to root after table script exits 
-                #     cd "$PROJECT_ROOT"
-                # else 
-                #     echo -e "${RED}Error: Database '$enteredname' not found.${NC}"
+                echo -e "\n${BLUE}--- Connect to Database ---${NC}"
+                read -p "Enter Database Name: " enteredname
+    
+                if [ -d "$DIR/$enteredname" ]; then
+                    echo -e "${GREEN}Connecting to '$enteredname'...${NC}" 
+        
+                cd "$DIR/$enteredname"
+
+                # if [ -z $enteredname ]; then
+                #     echo -e "${RED}Error: Database cannot be empty string. ${NC}"
                 # fi
-                # read -p "Press Enter to continue..."
-                # break
+
+                if [ -f "$PROJECT_ROOT/table.sh" ]; then
+                    bash "$PROJECT_ROOT/table.sh"
+                else
+                    echo -e "${RED}Error: table.sh not found in $PROJECT_ROOT${NC}" 
+                fi
+        
+                cd "$PROJECT_ROOT"
+                else 
+                    echo -e "${RED}Error: Database '$enteredname' not found.${NC}"
+                fi
+                read -p "Press Enter to continue..."
+                break
                 ;;
 
             "Delete Database")
