@@ -1,5 +1,5 @@
 #!/bin/bash
-PS3="Table Menu >> "
+#PS3="Table Menu >> "
 while true
 do
   echo "1) Create Table"
@@ -9,7 +9,8 @@ do
   echo "5) Select Data"
   echo "6) Delete Row"
   echo "7) Update Cell"
-  echo "8) Exit"
+  echo "8) Export To CSV (Bonus)"
+  echo "9) Exit"
   echo "*********************************************************"
 
 
@@ -125,6 +126,26 @@ drop_table() {
     echo "*********************************************************"
 }
 
+export_to_csv() {
+  read -p "Enter table name to export: " tname
+
+  # Check if table exists
+  if [ ! -f "$tname.data" ] || [ ! -f "$tname.meta" ]; then
+    echo "Error: Table '$tname' does not exist."
+    return
+  fi
+
+  csv_file="${tname}.csv"
+
+  # Write headers (column names from meta)
+  awk -F: '{print $1}' "$tname.meta" | paste -sd "," - > "$csv_file"
+
+  # Write data (convert : to ,)
+  tr ':' ',' < "$tname.data" >> "$csv_file"
+
+  echo "Table '$tname' exported to '$csv_file' successfully!"
+  echo "*********************************************************"
+}
 
 
 insert_row() {
@@ -205,8 +226,6 @@ list_tables() {
   done
 }
 
-
-
 select_data() {
   read -p "Enter table name: " tname
 
@@ -220,7 +239,7 @@ select_data() {
   awk -F: '{print $1}' "$tname.meta" | paste -sd ":" -
   cat "$tname.data"
 } | column -t -s ":"
-  echo "*********************************************************"
+  echo "*********s************************************************"
 }
 
 delete_row() {
@@ -350,7 +369,8 @@ update_cell() {
     5) select_data ;;
     6) delete_row ;;
     7) update_cell ;;
-    8) exit ;;
+    8) export_to_csv ;;
+    9) exit ;;
     *) echo "Invalid choice" 
     echo "****************************"
     ;;

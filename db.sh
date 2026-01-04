@@ -109,23 +109,26 @@ options=("Create Database" "List Databases" "Connect to Database" "Delete Databa
             "Delete Database")
                 echo -e "\n${RED}--- Delete Database ---${NC}"
                 read -p "Enter Name to Delete: " deletedname
+
+                if [[ ! "$deletedname" =~ ^[a-zA-Z][a-zA-Z0-9_]*$ ]]; then
+                    echo -e "${RED}Error: Invalid name format. Only letters, numbers, and underscores allowed.${NC}"
                 
-                #Ensure it's not empty and exists
-                if [[ -n "$deletedname" && -d "$DIR/$deletedname" ]]; then
+                elif [[ ! -d "$DIR/$deletedname" ]]; then
+                    echo -e "${RED}Error: Database '$deletedname' does not exist.${NC}"
+    
+                else
                     echo -e "${YELLOW}WARNING: This will delete everything in '$deletedname'!${NC}"
                     read -p "Type 'yes' to confirm: " confirm
                     if [[ "${confirm,,}" == "yes" ]]; then 
-                        rm -rf "$DIR/$deletedname"
-                        echo -e "${GREEN}Database deleted successfully.${NC}"
-                    else 
-                        echo -e "${YELLOW}Deletion cancelled.${NC}"
-                    fi
+                    rm -rf "$DIR/$deletedname"
+                    echo -e "${GREEN}Database deleted successfully.${NC}"
                 else 
-                    echo -e "${RED}Error: Database '$deletedname' does not exist.${NC}" 
-                fi
-                read -p "Press Enter to continue..."
-                break
-                ;;
+                    echo -e "${YELLOW}Deletion cancelled.${NC}"
+        fi
+    fi
+    read -p "Press Enter to continue..."
+    break
+    ;;
 
             "Exit")
                 echo -e "${BLUE}Exiting DBMS. Goodbye!${NC}" 
