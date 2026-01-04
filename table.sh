@@ -235,12 +235,43 @@ select_data() {
     return
   fi
 
-{
-  awk -F: '{print $1}' "$tname.meta" | paste -sd ":" -
-  cat "$tname.data"
-} | column -t -s ":"
-  echo "*********s************************************************"
+  # Show available columns
+  echo "Available columns:"
+  awk -F: '{print NR ") " $1}' "$tname.meta"
+
+  read -p "Select columns (* for all or e.g. 1,3): " choice
+
+  # ===== SELECT ALL =====
+  if [ "$choice" = "*" ]; then
+    {
+      awk -F: '{print $1}' "$tname.meta" | paste -sd ":" -
+      cat "$tname.data"
+    } | column -t -s ":"
+    echo "*********************************************************"
+    return
+  fi
+
+  # ===== HEADER =====
+  header=""
+  IFS=',' read -ra cols <<< "$choice"
+  for c in "${cols[@]}"; do
+    col_name=$(awk -F: -v n="$c" 'NR==n {print $1}' "$tname.meta")
+    header+="$col_name:"
+  done
+  header=${header%:}
+
+  # ===== BUILD AWK FIELDS =====
+  awk_fields=$(printf "\$%s," "${cols[@]}")
+  awk_fields=${awk_fields%,}  # remove trailing comma
+
+  {
+    echo "$header"
+    awk -F: "{print $awk_fields}" "$tname.data"
+  } | column -t -s ":"
+
+  echo "*********************************************************"
 }
+
 
 delete_row() {
   read -p "Enter table name: " tname
