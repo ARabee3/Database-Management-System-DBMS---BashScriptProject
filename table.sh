@@ -391,7 +391,7 @@ update_cell() {
 
 
   read -p "Choose option: " choice
-
+  clear
   case $choice in
     1) create_table ;;
     2) list_tables ;;
