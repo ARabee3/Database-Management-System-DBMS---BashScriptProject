@@ -400,6 +400,6 @@ Give a ⭐️ if this project helped you!
 
 **Made with ❤️ and Bash**
 
-[Report Bug](https://github.com/ARabee3/bash-dbms/issues) • [Request Feature](https://github.com/ARabee3/bash-dbms/issues)
+[Report Bug](https://github.com/ARabee3/Database-Management-System-DBMS---BashScriptProject/issues) • [Request Feature](https://github.com/ARabee3/Database-Management-System-DBMS---BashScriptProject/issues)
 
 </div>
