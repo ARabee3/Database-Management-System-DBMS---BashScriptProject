@@ -91,7 +91,7 @@ options=("Create Database" "List Databases" "Connect to Database" "Delete Databa
 
                         #Check if table.sh exists and is executable in the ROOT
                         if [[ -f "$PROJECT_ROOT/table.sh" ]]; then
-                            chmod 777 "$PROJECT_ROOT/table.sh"
+                            chmod 700 "$PROJECT_ROOT/table.sh"
                             bash "$PROJECT_ROOT/table.sh"
                         else
                             echo -e "${RED}Error: 'table.sh' is missing or not executable in $PROJECT_ROOT.${NC}" 

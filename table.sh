@@ -211,7 +211,7 @@ if [[ "$val" == *:* ]]; then
     row+="$val:"
   done < "$tname.meta"
 
-  echo "${row::-1}" >> "$tname.data"
+  echo "${row::-1}" >> "$tname.data" #removes trailing colons
   echo "Row inserted successfully!"
     echo "*********************************************************"
 }
